@@ -55,6 +55,7 @@ publishing {
     repositories {
         maven {
             url = "http://172.31.29.153:8081/repository/gradle-build-artifact/"
+            allowInsecureProtocol = true 
             credentials {
                 username "admin"
                 password "admin"
