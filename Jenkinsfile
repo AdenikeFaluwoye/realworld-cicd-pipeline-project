@@ -134,14 +134,18 @@ stage("Nexus Artifact Uploader") {
          }
       }
    }
-post {
-  always {
-      echo 'Slack Notifications.'
-      slackSend(
-          channel: '#jenkins-ci-pipeline-alerts-af',
-          color: COLOR_MAP[currentBuild.currentResult],
-          message: "*${currentBuild.currentResult}:* Job '${env.JOB_NAME}' build #${env.BUILD_NUMBER}\nWorkspace: ${env.WORKSPACE}\nMore info: ${env.BUILD_URL}"
-      )
-  }
 }
+post {
+    always {
+        echo 'Slack Notifications.'
+        slackSend(
+            channel: '#jenkins-ci-pipeline-alerts-af',
+            color: COLOR_MAP[currentBuild.currentResult],
+            message: """*${currentBuild.currentResult}:* Job '${env.JOB_NAME}' build #${env.BUILD_NUMBER}
+Workspace: ${env.WORKSPACE}
+More info: ${env.BUILD_URL}"""
+        )
+    }
+}
+
 
