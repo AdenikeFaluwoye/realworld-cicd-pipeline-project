@@ -1,7 +1,7 @@
 def COLOR_MAP = [
-    'SUCCESS': 'good', 
+    'SUCCESS': 'good',
     'FAILURE': 'danger',
-    'UNSTABLE': 'danger'
+    'UNSTABLE': 'warning'
 ]
 pipeline {
   agent any
@@ -137,14 +137,14 @@ stage("Nexus Artifact Uploader") {
 }
 post {
     always {
-        echo 'Slack Notifications.'
-        slackSend(
-            channel: '#jenkins-ci-pipeline-alerts-af',
-            color: COLOR_MAP[currentBuild.currentResult],
-            message: """*${currentBuild.currentResult}:* Job '${env.JOB_NAME}' build #${env.BUILD_NUMBER}
-Workspace: ${env.WORKSPACE}
-More info: ${env.BUILD_URL}"""
-        )
+        withCredentials([string(credentialsId: 'slack-bot-token', variable: 'SLACK_TOKEN')]) {
+            slackSend(
+                channel: '#cicd-updates',
+                token: "$SLACK_TOKEN",
+                color: COLOR_MAP.get(currentBuild.currentResult, 'warning'),
+                message: "*${currentBuild.currentResult}:* Job '${env.JOB_NAME}' build #${env.BUILD_NUMBER}\nWorkspace: ${env.WORKSPACE}\nMore info: ${env.BUILD_URL}"
+            )
+        }
     }
 }
 
