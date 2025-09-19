@@ -58,7 +58,7 @@ pipeline {
                 sh """
                 mvn sonar:sonar \
                 -Dsonar.projectKey=Java-WebApp-Project \
-                -Dsonar.host.url=http://172.31.22.021:9000 \
+                -Dsonar.host.url=http://172.31.22.121:9000 \
                 -Dsonar.login=$SONAR_TOKEN
                 """
                 }
@@ -72,25 +72,32 @@ pipeline {
           }
        }
     }
-    stage("Nexus Artifact Uploader"){
-        steps{
-           nexusArtifactUploader(
-              nexusVersion: 'nexus3',
-              protocol: 'http',
-              nexusUrl: '172.31.38.223:8081',
-              groupId: 'webapp',
-              version: "${env.BUILD_ID}-${env.BUILD_TIMESTAMP}",
-              repository: 'maven-project-releases',  //"${NEXUS_REPOSITORY}",
-              credentialsId: "${NEXUS_CREDENTIAL_ID}",
-              artifacts: [
-                  [artifactId: 'webapp',
-                  classifier: '',
-                  file: "${WORKSPACE}/webapp/target/webapp.war",
-                  type: 'war']
-              ]
-           )
+stage("Nexus Artifact Uploader") {
+    steps {
+        script {
+            // Define versioning
+            def appVersion = "1.0.${env.BUILD_ID}"
+            def repositoryName = appVersion.contains("SNAPSHOT") ? "Java-webapp-snapshot" : "Java-webapp-release"
+
+            nexusArtifactUploader(
+                nexusVersion: 'nexus3',
+                protocol: 'http',
+                nexusUrl: '172.31.18.252:8081',   //  Your Nexus private URL
+                groupId: 'webapp',
+                version: appVersion,
+                repository: repositoryName,
+                credentialsId: "${NEXUS_CREDENTIAL_ID}",
+                artifacts: [
+                    [artifactId: 'webapp',
+                     classifier: '',
+                     file: "${WORKSPACE}/target/webapp.war",  //  fixed path
+                     type: 'war']
+                ]
+            )
         }
     }
+}
+
     stage('Deploy to Development Env') {
         environment {
             HOSTS = 'dev'
@@ -127,13 +134,14 @@ pipeline {
          }
       }
    }
-  post {
-    always {
-        echo 'Slack Notifications.'
-        slackSend channel: '#jenkins-ci-pipeline-alerts-af', //update and provide your channel name
-        color: COLOR_MAP[currentBuild.currentResult],
-        message: "*${currentBuild.currentResult}:* Job Name '${env.JOB_NAME}' build ${env.BUILD_NUMBER} \n Build Timestamp: ${env.BUILD_TIMESTAMP} \n Project Workspace: ${env.WORKSPACE} \n More info at: ${env.BUILD_URL}"
-    }
+post {
+  always {
+      echo 'Slack Notifications.'
+      slackSend(
+          channel: '#jenkins-ci-pipeline-alerts-af',
+          color: COLOR_MAP[currentBuild.currentResult],
+          message: "*${currentBuild.currentResult}:* Job '${env.JOB_NAME}' build #${env.BUILD_NUMBER}\nWorkspace: ${env.WORKSPACE}\nMore info: ${env.BUILD_URL}"
+      )
   }
 }
 
